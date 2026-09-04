@@ -38,6 +38,10 @@ TPT's work splits into two kinds of thing, and the structure below mirrors that:
   migrations). See `projects/README.md`.
 - `runbooks/` — step-by-step operational procedures ("what to do when X"). See
   `runbooks/README.md`.
+- `skills/` — canonical copies of Claude Code skills the team has written for TPT work
+  (`<skill-name>/SKILL.md`). Claude Code only loads skills from a project's own
+  `.claude/skills/` or your user-level `~/.claude/skills/`, not from here directly — see
+  `skills/README.md` for how to actually put one to use.
 
 Each folder's `README.md` is the authority on what belongs in it — check there before adding
 a file in the wrong place.

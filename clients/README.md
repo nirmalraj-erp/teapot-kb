@@ -5,12 +5,19 @@ to `products/`, which covers TPT codebases shared across multiple clients (VisWo
 Grouped into domain subfolders:
 
 - `pos/` — Point of Sale clients built on the shared `products/xpos-tech.md` product
-- `ecommerce/` — e-commerce/storefront customization projects
+- `ecommerce/` — e-commerce/storefront clients, some bespoke, some built on the shared
+  `products/xmart.md` product (check each file — see `servers/client-repo-matrix.md` for which)
 - `academy/` — education/academy-management customization projects
 - `fleet/` — fleet/rental-management customization projects
-- `unclassified/` — clients whose addon repo hasn't been located/cloned yet, so their domain
-  is unknown. Re-tag into a proper domain folder once the repo is cloned and reviewed — see
-  each file's TODO.
+- `manufacturing/` — fabrication/MRP/purchase-workflow customization projects
+- `website/` — clients with **no** client-specific or shared-product addon repo at all, just a
+  theme (confirmed via `addons_path` — see `servers/client-repo-matrix.md`). Move a client out
+  of here the moment a real repo shows up in its `addons_path`.
+
+If a client's addon repo hasn't been located/cloned yet, its domain is unknown — check
+`odoo-conf/<client>.conf`'s `addons_path` once cloned (this is how every domain above was
+actually confirmed, not guessed) and file it in the right folder rather than leaving it
+unclassified.
 
 Filename: `<client-slug>.md`, matching the slug used in `odoo-conf/*.conf` and the client's
 addon repo where one exists (e.g. `ergodenta.md`, `samaran.md`).

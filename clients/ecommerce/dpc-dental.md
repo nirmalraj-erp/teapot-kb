@@ -1,8 +1,10 @@
 # dpc-dental
 
 **Domain:** E-commerce (same market as `ergodenta`/`madental`).
-**Type:** Odoo customization project (bespoke, not a shared product).
-**Repo:** Not yet located — to be cloned into the `odoo-17` server folder.
+**Type:** Runs on the shared `products/xmart.md` product, no bespoke repo of its own — confirmed
+via both `odoo-conf/dpc-dental-17c.conf` and `dpc-dental-eu-17c.conf`'s `addons_path`
+(`theme`, `design-themes`, `xmart`, `oca-repo/server-brand`, `oca-repo/server-tools`,
+`oca-repo/server-auth` — identical on both hosts, no client-specific repo).
 **Host:** Live on `eu-central-1` (`dpc-dental-eu-17c.conf`); dormant on `ap-southeast-1`
 (`dpc-dental-17c.conf`) — deliberately split into separate config/systemd pairs per host since
 2026-09-02, don't re-merge them.

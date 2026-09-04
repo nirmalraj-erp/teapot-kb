@@ -1,6 +1,8 @@
 # ergodenta (ErgoDenta)
 
-**Domain:** E-commerce. **Type:** Odoo customization project (bespoke, not a shared product).
+**Domain:** E-commerce. **Type:** Odoo customization project — fully bespoke; confirmed via
+`odoo-conf/ergodenta-17.conf`'s `addons_path` that it does **not** use the shared
+`products/xmart.md` product (unlike `madental`, `dpc-dental`, `mivik`, `skenmar`).
 **Repo:** `ergodenta` (`git@bitbucket.org:teapottechies/ergodenta.git`, branch `17.0`, 18
 modules) — in the `odoo-17/tpt-eu` workspace.
 **Host:** `eu-central-1` (standard backend, threaded, prod). Domains: `ergodenta.com`,

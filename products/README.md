@@ -8,4 +8,6 @@ core architecture/business flow, and which clients run it (cross-link to `client
 roadmap/initiative work that spans multiple clients belongs in `projects/`, not here — this file
 should describe what the product *is*, not what's currently being built for it.
 
-Current products: `viswox.md` (construction ERP), `xpos-tech.md` (POS customization library).
+Current products: `viswox.md` (construction ERP), `xpos-tech.md` (POS customization library),
+`xmart.md` (e-commerce module library). See `servers/client-repo-matrix.md` for exactly which
+clients each shared repo is confirmed to serve, derived from `odoo-conf/*.conf`.

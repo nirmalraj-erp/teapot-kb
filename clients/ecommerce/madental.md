@@ -1,8 +1,11 @@
 # madental (Madental)
 
-**Domain:** E-commerce. **Type:** Odoo customization project (bespoke, not a shared product).
+**Domain:** E-commerce. **Type:** Bespoke Odoo customization project — but also layers in the
+shared `products/xmart.md` product (unlike `ergodenta`, which is pure bespoke).
 **Repo:** `madental` (`git@bitbucket.org:teapottechies/madental.git`, branch `17.0`, 37 modules)
-— in the `odoo-17/tpt-eu` workspace.
+— in the `odoo-17/tpt-eu` workspace. Confirmed via `odoo-conf/madental-17.conf`'s `addons_path`,
+which includes both `xmart` and `madental` (plus `enterprise`, `design-themes`, `theme`,
+`server-auth`, `website`, `social`, `tpt_addons`).
 **Host:** `eu-central-1` (standard backend, threaded, prod). Domain: `madental.dk`.
 
 ## What's known from code

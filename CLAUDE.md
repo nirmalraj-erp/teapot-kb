@@ -26,12 +26,14 @@ TPT's work splits into two kinds of thing, and the structure below mirrors that:
   `ergodenta`, `madental`, and others). Documented in `clients/`, grouped into domain subfolders.
 
 - `products/` — one file per shared product (what it is, editions/variants, architecture,
-  which clients run it). See `products/README.md`.
-- `clients/` — one file per customization-project client, grouped by domain: `pos/`,
-  `ecommerce/`, `academy/`, `fleet/`, `unclassified/` (repo not yet cloned/domain unconfirmed).
-  See `clients/README.md`.
-- `servers/` — one file per production host (what it hosts, non-secret operational notes).
-  See `servers/README.md`. Ports/config stay authoritative in `tpt-dev-scripts`, not here.
+  which clients run it): VisWoX, XPOS Tech, XMart. See `products/README.md`.
+- `clients/` — one file per client, grouped by domain: `pos/`, `ecommerce/`, `academy/`,
+  `fleet/`, `manufacturing/`, `website/` (no custom repo at all). See `clients/README.md`.
+- `servers/` — one file per production host (what it hosts, non-secret operational notes),
+  plus `client-repo-matrix.md` — the authoritative client→repo→domain mapping, built directly
+  from each `odoo-conf/*.conf`'s `addons_path` (don't guess domain from workspace location;
+  confirm it from `addons_path` the way that file does). See `servers/README.md`. Ports/config
+  stay authoritative in `tpt-dev-scripts`, not here.
 - `projects/` — cross-cutting initiatives not scoped to one client (e.g. multi-client
   migrations). See `projects/README.md`.
 - `runbooks/` — step-by-step operational procedures ("what to do when X"). See
@@ -53,7 +55,7 @@ high-level map between them, not duplicate their content.
 
 | Repo | Path | What it is |
 |---|---|---|
-| `odoo-17/tpt-ind` | `~/PycharmProjects/odoo-17/tpt-ind` | A workspace folder (not itself a git repo) bundling vanilla Odoo 17 core plus three independent client addon repos: **`motox`** (client `samaran` — vehicle rental/fleet booking), **`xperts_academy`** (client `blaze-xpert-academy` — academy/course management), **`xpos_tech`** (clients `gadgets` and `nvt` — one shared POS customization library deployed to both) |
+| `odoo-17/tpt-ind` | `~/PycharmProjects/odoo-17/tpt-ind` | A workspace folder (not itself a git repo) bundling vanilla Odoo 17 core plus client/product addon repos: **`motox`** (client `samaran` — fleet), **`xperts_academy`** (client `blaze-xpert-academy` — academy), **`xpos_tech`** (POS product — `gadgets`, `nvt`), **`fabx`** (client `chakra` — manufacturing/MRP), **`xmart`** (e-commerce product — `dpc-dental`, `mivik`, `skenmar`, plus `madental` in `tpt-eu`). Its own `CLAUDE.md` was written before `fabx`/`xmart` were cloned and doesn't mention them yet |
 | `odoo-17/tpt-eu` | `~/PycharmProjects/odoo-17/tpt-eu` | Same kind of workspace folder, bundling Odoo 17 core plus two client addon repos: **`ergodenta`** (client ErgoDenta) and **`madental`** (client Madental) — both e-commerce clients, hosted in `eu-central-1` |
 | `tpt-dev-scripts` | `~/PycharmProjects/tpt-dev-scripts` | Ops/config-only repo: per-client Odoo server configs (`odoo-conf/`), nginx reverse-proxy vhosts, systemd units, and the port/memory allocation table (`odoo-conf-summary.md`) for both production hosts |
 | `viswox` | `~/PycharmProjects/viswox` | TPT's own product: **VisWoX ERP**, a construction-industry Odoo 17 product covering planning → procurement → site execution → finance, shipped in Standard/Premium/Pilot commercial editions |

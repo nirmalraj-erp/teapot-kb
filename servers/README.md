@@ -15,3 +15,8 @@ What belongs in a host file:
 **Never put credentials, SSH keys, or access secrets in this folder** — those live in
 `tpt-dev-scripts`' gitignored `.env` (or wherever the team's secrets manager is), never in a
 tracked file in this repo.
+
+`client-repo-matrix.md` also lives here: a per-client breakdown, built directly from each
+`odoo-conf/*.conf`'s `addons_path`, of which repo(s) and domain each production client actually
+uses. Update it whenever a client's `addons_path` changes in a way that affects which repo or
+product it depends on.

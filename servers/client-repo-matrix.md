@@ -43,7 +43,12 @@ with `products/` (shared, multi-client repos) and `clients/<domain>/` (per-clien
   don't get their own `products/` entry.
 - `tpt_addons` and `product-variant` are referenced by multiple clients but haven't been located/
   reviewed yet — TODO once cloned, confirm whether either is domain-specific enough to warrant
-  its own `products/` entry.
+  its own `products/` entry. Partial lead (unconfirmed): `gadgets`' installed modules include
+  `account_report_hide_empty_taxes`, whose manifest matches a module living in the
+  `xperts_academy` repo — but `xperts_academy` isn't in `gadgets`' `addons_path`, `tpt_addons`
+  is. An old local backup checkout has a `tpt_addons/xperts_academy/` nesting the same module,
+  suggesting `tpt_addons` may be a grab-bag directory of multiple client repos rather than a
+  single product — needs verifying against the live server. See `clients/pos/gadgets.md`.
 
 ## Repo → client map (visual)
 

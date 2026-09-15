@@ -71,6 +71,7 @@ contained on this host. Full record: `tpt-dev-scripts/SECURITY-INCIDENT-2026-09-
 Generalized detection/response steps: `runbooks/postgres-copy-program-compromise.md`. The
 `aversan-demo.service` unit mentioned in earlier versions of this file (dead SaaS-16.3 leftover)
 was removed as part of this cleanup, along with the `saizen`/`raybright`/`viable`/`17focus`/
-`viswox17` retirements reflected in the client table above. **Not fully closed** — see "Still
-open" in the incident doc (unrotated `db_password`, `ubuntu` Postgres role still superuser, no
-durable egress block yet, and the actual Odoo-side injection point was never identified).
+`viswox17` retirements reflected in the client table above. The `odoo` role's password has since
+been rotated (2026-09-15, coordinated with the kships+skenmar merge restart). **Not fully closed**
+— see "Still open" in the incident doc (`ubuntu` Postgres role still superuser, no durable egress
+block yet, and the actual Odoo-side injection point was never identified).

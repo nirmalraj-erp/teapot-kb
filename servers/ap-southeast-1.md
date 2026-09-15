@@ -16,8 +16,7 @@ SSH connection details: `tpt-dev-scripts`' gitignored `.env` (`TPT_SERVER_HOST` 
 
 | Client | Workload | Status |
 |---|---|---|
-| `skenmar` | Website only | Running |
-| `kships` | Website only | Running |
+| `skenmar` + `kships` | Website only | Running — **merged 2026-09-15** into one process, `odoo17-kships-skenmar.service` (see below) |
 | `nvt` | POS | Running (worker mode) |
 | `mivik` | Standard backend | Running |
 | `blaze-xpert-academy` | Standard backend | Running |
@@ -27,6 +26,16 @@ SSH connection details: `tpt-dev-scripts`' gitignored `.env` (`TPT_SERVER_HOST` 
 | `saizen` | Website only | **Fully retired 2026-09-15** — conf removed, databases dropped (was already inactive since 2026-08-17) |
 | `sanyo` | Website only | Dormant (configured, not started) |
 | `dpc-dental` | Standard backend | Dormant on this host (live deployment is on `eu-central-1` instead — see there) |
+
+**`kships`+`skenmar` merge (2026-09-15):** both were threaded (`workers=0`) website-only clients,
+so they now share one process (`odoo17-kships-skenmar.service`, `kships-skenmar-17c.conf`) instead
+of two — `dbfilter` picks the right database per request instead of a pinned `db_name`. Each
+domain's nginx vhost rewrites *both* `Host` and `X-Forwarded-Host` to a synthetic per-site value
+(`proxy_mode=True` makes Odoo prefer the latter for this, so rewriting `Host` alone silently does
+nothing). `nvt`+`gadgets` were deliberately **not** merged the same way — both are already
+`workers=1` POS terminals, and sharing one worker would have reduced real concurrency for exactly
+the two clients that prompted this investigation; see `odoo-conf-summary.md` for the full
+reasoning.
 
 Also retired 2026-09-15, none of these ever had a running client instance on this host (leftover
 Postgres databases only, cleaned up as part of the security incident below):

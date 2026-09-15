@@ -34,3 +34,10 @@ Based on the conventions documented in `tpt-dev-scripts/CLAUDE.md`.
    update it in the same change that adds the new client conf.
 9. **Add a client file here** in `clients/` (see `clients/README.md`) and, once you know which
    host it's on, add it to the relevant `servers/<host>.md` client table.
+10. **Confirm the new client's Postgres `db_user` role is NOT superuser.**
+    `SELECT rolname, rolsuper, rolcreatedb, rolcreaterole FROM pg_roles WHERE rolname = '<db_user>';`
+    — `rolsuper` should be `f`. `CREATEDB`/`CREATEROLE` is enough for Odoo's own database
+    management; superuser lets any SQL-injection-shaped bug in the app reach OS command execution
+    via `COPY ... TO/FROM PROGRAM`. This is exactly how `ap-southeast-1` was compromised for ~8
+    weeks starting 2026-07-20 — see `tpt-dev-scripts/SECURITY-INCIDENT-2026-09-15.md` and
+    `runbooks/postgres-copy-program-compromise.md`.

@@ -75,8 +75,8 @@ Client Odoo 17 instances run on two production Lightsail hosts, both managed thr
 `tpt-dev-scripts`:
 
 - **`ap-southeast-1`** — primary host; clients include `skenmar`, `kships`, `nvt`, `mivik`,
-  `blaze-xpert-academy`, `gadgets`, `samaran`, `chakra`, plus `saizen` and `dpc-dental` (dormant
-  there).
+  `blaze-xpert-academy`, `gadgets`, `samaran`, `chakra`, plus `dpc-dental` (dormant there).
+  `saizen` was fully retired 2026-09-15 (see `servers/ap-southeast-1.md`).
 - **`eu-central-1`** (`3.125.249.119`) — hosts `ergodenta`, `madental`, and the live
   `dpc-dental` instance.
 

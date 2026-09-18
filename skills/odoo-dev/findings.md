@@ -13,7 +13,7 @@ happen" entries.
 Copy this for each new entry:
 
 ```
-## <short title> (<client/product>, <date>)
+### <short title> (<client/product>, <date>)
 **Symptom:** what was observed
 **Root cause:** what was actually wrong
 **Fix / takeaway:** what to do differently

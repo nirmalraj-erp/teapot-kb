@@ -37,8 +37,9 @@ A module is a directory containing `__manifest__.py` plus the standard subfolder
 - **`env`** (`self.env`) carries the current user, context, and cursor. `self.env['model.name']`
   gets an empty recordset of that model to call `search`/`create`/`browse` on.
 - **`with_context(...)`, `sudo()`, `with_user(...)`** each return a *new* recordset bound to a
-  modified environment — they don't mutate `self`. `sudo()` bypasses ACLs/record rules, not
-  field-level `groups=` restrictions.
+  modified environment — they don't mutate `self`. `sudo()` bypasses ACLs, record rules, and
+  field-level `groups=` restrictions — only hard-coded Python checks (e.g. explicit
+  `has_group()` calls) are unaffected by it.
 - **Field types**: `Char`, `Text`, `Integer`, `Float`, `Boolean`, `Date`/`Datetime`, `Selection`,
   `Many2one`, `One2many`, `Many2many`, `Binary`. `Many2one` stores a foreign key column;
   `One2many` is a virtual reverse-lookup (no column on this model — needs an `inverse_name`

@@ -264,14 +264,18 @@ here — see `tpt-dev-scripts`'s `odoo-conf-summary.md` and its `CLAUDE.md` for 
   connection's whole lifetime. It is one additional process, separate from and not counted in the
   `workers` total. (Older Odoo versions called this the "longpolling" worker/port; the mechanism
   is now websocket-based but serves the same purpose.)
-- **DB connection pool (`db_maxconn`)** caps how many Postgres connections *this Odoo instance*
-  will open — a general Odoo server-config parameter, not something the deploy guide's worker
-  page itself documents in depth. Each active worker holds at least one connection while handling
-  a request; if `db_maxconn` is smaller than concurrent active workers, requests queue for a
-  connection even though the workers themselves are idle-waiting, not CPU-bound — a symptom that
-  looks like "not enough workers" but is actually "not enough DB connections for the workers you
-  have." `db_maxconn` also has to fit within Postgres's own `max_connections`, shared across every
-  service on that DB host, not just this one Odoo instance.
+- **DB connection pool (`db_maxconn`, default 64)** is a **per-process** pool: in multi-processing
+  mode, each worker process (and the cron worker pool, and the master process) gets its own
+  independent pool of up to `db_maxconn` connections — it is not one shared instance-wide pool
+  that all workers draw from and queue against. This is a general Odoo server-config parameter,
+  not one covered in depth by the deploy guide's worker-sizing page itself. The real
+  multi-process risk is the *aggregate* connection count against Postgres's own `max_connections`
+  (shared across every service on that DB host, not just this Odoo instance):
+  `(1 + workers + max_cron_threads) × db_maxconn` must stay under Postgres's `max_connections`,
+  or new connections start failing outright across the whole instance. (The "workers queue for a
+  connection" failure mode is a real risk too, but it applies to `workers = 0` multi-threaded
+  mode, where `db_maxconn` *is* one shared pool for the single process — not to the multi-process
+  model the rest of this section describes.)
 - **Cron/queue_job concurrency.** Scheduled actions share `max_cron_threads` among themselves —
   a stuck or very long cron job can starve every other scheduled job on that instance, not just
   delay itself. If a project uses the community `queue_job` module for async job processing, its

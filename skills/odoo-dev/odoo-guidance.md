@@ -64,3 +64,64 @@ A module is a directory containing `__manifest__.py` plus the standard subfolder
   `UNIQUE`, `CHECK`).
 
 **Version notes:** Odoo 17 (current).
+
+## 3. Views & QWeb
+
+- **View types** most used in custom modules: `form`, list (XML tag is still `<tree>` in Odoo
+  17 — confirmed against the current `view_architectures.html` reference; Odoo 18 renamed the
+  root tag to `<list>`, so don't carry that over when reading newer docs/modules), `kanban`,
+  `search`. Each is XML registered via an `ir.ui.view` record, referenced by an
+  `ir.actions.act_window`, which is what a menu item opens.
+- **View inheritance** (`inherit_id` + `<xpath expr="..." position="...">`) is the standard way
+  to modify a view without copying it — `position="after"/"before"/"inside"/"replace"/"attributes"`.
+  Prefer targeting a stable `name`/`field name=` attribute in the `expr`, not positional XPath
+  (`//field[3]`), since upstream view edits reorder elements and silently break positional xpath.
+- **QWeb** (`<t t-...>` templates) is used for both web frontend rendering and PDF reports
+  (`report.xml` declares an `ir.actions.report` pointing at a QWeb template `ir.ui.view` of type
+  `qweb`). Report templates commonly extend `web.external_layout` for letterhead/footer.
+- Domains in `search`/`filter`/field `domain=` attributes use prefix-notation tuples/strings,
+  e.g. `[('state', '=', 'done'), '|', ('user_id', '=', uid), ('team_id', 'in', team_ids)]` —
+  `&`/`|` apply to the *next two* leaves, not to everything after them.
+
+**Version notes:** Odoo 17 (current).
+
+## 4. Business logic patterns
+
+- **Wizards** are transient models (`models.TransientModel`) — rows auto-expire based on
+  `_transient_max_hours` (default 1 hour of inactivity), cleaned up by a daily "Base: Auto-vacuum
+  internal data" scheduled action — so they're for a single UI interaction's temporary state,
+  never for data meant to persist.
+- **Mixins** (e.g. `mail.thread`, `mail.activity.mixin`) are added via multiple inheritance
+  (`_inherit = ['base.model', 'mail.thread']`) to add cross-cutting behavior (chatter, activities)
+  without duplicating code — prefer composing an existing mixin over reimplementing its behavior.
+- **Scheduled actions** (`ir.cron`) run server-wide, not per-user — code inside must not assume
+  `self.env.user` is a real logged-in user with the expected access; explicit `sudo()` or a
+  dedicated technical user is typical. Cron jobs share the `max_cron_threads` worker pool (see
+  Section 7) — a long-running cron can starve other scheduled jobs, not just itself.
+- **Server actions** (`ir.actions.server`) with `state='code'` execute Python through
+  `safe_eval` — a restricted eval that blocks arbitrary imports/dangerous builtins, but is
+  explicitly documented as *not* a full security sandbox against a determined trusted user. Only
+  admin/technical-settings users can create or edit them, and the code runs with whatever access
+  the calling context already has (no automatic `sudo()`).
+
+**Version notes:** Odoo 17 (current).
+
+## 5. Security
+
+- **`ir.model.access.csv`** grants CRUD *per model, per group* — `perm_read/write/create/unlink`
+  as 1/0 columns. A group with no matching row for a model has zero access, silently (no error,
+  the record/menu is just invisible) — access rights are additive across a user's groups (the
+  union of whatever each group grants).
+- **Record rules** (`ir.rule`) filter *which rows* a group can see/act on within a model it
+  already has model-level access to, via a domain evaluated with `user` in scope (e.g.
+  `[('company_id', '=', user.company_id.id)]`). Group-scoped rules *unify* (any matching rule
+  grants access); global rules (no group) *intersect* with everything else and apply to everyone,
+  including the model's own admin group, unless explicitly scoped otherwise.
+- **`groups=` on a field** (in the Python field definition or a view's `groups=` attribute)
+  hides that field from users outside the listed group and rejects explicit reads/writes to it
+  from those users — this is enforced server-side, not just a UI hint, but it does not replace a
+  record rule or model access, and `sudo()` bypasses it entirely for whoever calls the code.
+- Multi-company: `company_id` fields plus record rules are how row-level company isolation is
+  enforced — a model intended to be company-scoped needs both the field and a rule, not just one.
+
+**Version notes:** Odoo 17 (current).

@@ -283,3 +283,40 @@ here — see `tpt-dev-scripts`'s `odoo-conf-summary.md` and its `CLAUDE.md` for 
   `max_cron_threads` — sizing one without the others is a common way to under- or over-provision.
 
 **Version notes:** Odoo 17 (current).
+
+## 8. Debugging & profiling
+
+What makes Sections 6–7 actionable rather than theoretical — how to actually find which of those
+patterns is happening, and where.
+
+- **`--log-sql`** (equivalent to `--log-handler=odoo.sql_db:DEBUG`; or `log_level = debug_sql` in
+  the config file) logs every SQL statement Odoo issues, with execution time. Combined with a
+  request, this turns "the page is slow" into a concrete, greppable statement count and duration
+  — the number Tier 1–3 anti-patterns above show up as directly (e.g. "456 statements" for the
+  `exists()`-in-a-loop case).
+- **`odoo shell -c <config> -d <db>`** drops into a Python REPL with `env` already bound to the
+  target database — the fastest way to reproduce a suspected N+1 or quadratic pattern in
+  isolation (time a `search`/`write` against a real recordset) without going through the web UI.
+- **Odoo's built-in profiler** (`odoo.tools.profiler.Profiler` context manager in code, or from
+  the UI: enable developer mode, then **Settings → General Settings → Performance** to turn
+  profiling on for the database with an expiry time, then toggle "Enable profiling" again in the
+  developer mode tools menu to turn it on for your own session) records per-call SQL and
+  execution-time breakdowns via pluggable collectors (SQL, Periodic/traces, QWeb, and a
+  high-overhead Sync collector). Results are saved as `ir.profile` records; opening one launches
+  the bundled speedscope viewer in a new tab for a flamegraph view — useful for confirming *which*
+  method in a call stack is the expensive one before assuming.
+- **`py-spy`** (`py-spy dump --pid <worker-pid>` for an instant stack snapshot, or
+  `py-spy record -o profile.svg --pid <worker-pid>` to sample over a period and produce a flame
+  graph) attaches to a live worker process without restarting it — the right tool when a worker
+  is visibly stuck/slow *right now* and restarting would lose the chance to diagnose it.
+- **`pg_stat_statements`** (Postgres extension; check it's enabled with
+  `SELECT * FROM pg_extension WHERE extname = 'pg_stat_statements';` — it also needs
+  `shared_preload_libraries = 'pg_stat_statements'` set at the Postgres server level, which is an
+  infra-side change, not something a project can turn on for itself) tracks aggregate cost across
+  *all* queries over time, independent of any one request — the tool for "what's the worst query
+  on this database overall," as opposed to `--log-sql`'s per-request view.
+- **`EXPLAIN ANALYZE`** on a query pulled from `--log-sql` or `pg_stat_statements` confirms
+  whether a suspected missing index (Tier 1) is actually the cause — look for `Seq Scan` on a
+  large table where an `Index Scan` would be expected.
+
+**Version notes:** Odoo 17 (current).

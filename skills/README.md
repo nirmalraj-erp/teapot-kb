@@ -21,4 +21,5 @@ If you improve a skill from either location, port the change back here so the ca
 stays current — don't let copies drift the way `tpt-odoo-ops` did before this folder existed
 (it was hand-duplicated, byte-identical, in both `tpt-dev-scripts` and `odoo-17/tpt-eu`).
 
-Current skills: `tpt-odoo-ops` (TPT Odoo production deploy/ops runbook).
+Current skills: `tpt-odoo-ops` (TPT Odoo production deploy/ops runbook), `odoo-dev` (Odoo 17
+development reference — framework, ORM performance, server resource utilization).

@@ -223,3 +223,59 @@ data afterwards (a fresh document inheriting another document's history).
 → `copy=False` on any field that records what happened to the *original*, not the copy.
 
 **Version notes:** Odoo 17 (current).
+
+## 7. Server architecture & resource utilization
+
+Framework-level only: this section covers how Odoo *itself* consumes and allocates server
+resources. TPT's actual per-client worker counts, memory tiers, and ports are **not** repeated
+here — see `tpt-dev-scripts`'s `odoo-conf-summary.md` and its `CLAUDE.md` for those, and the
+`tpt-odoo-ops` skill for the deploy procedures that apply them.
+
+- **Worker models.** `workers = 0` (the default) runs Odoo **multi-threaded**: a new thread is
+  spawned per incoming HTTP request, all inside one process — fine for local dev, wrong for
+  production (one slow or stuck request can starve the whole process). `workers > 0` switches to
+  **multi-processing**: a pool of worker processes is created at startup, each handling one
+  request at a time, plus a separate cron worker pool (`max_cron_threads`, decoupled from the
+  HTTP worker pool).
+- **Sizing workers to CPU/RAM.** Odoo's own rule of thumb is workers ≈ `(#CPU cores × 2) + 1`,
+  with roughly "1 worker ≈ 6 concurrent users" as the corresponding load estimate. That's a CPU-only
+  starting point — Odoo's docs pair it with a RAM check: estimate needed RAM as
+  `#workers × (light_ratio × light_worker_RAM + heavy_ratio × heavy_worker_RAM)`, using ballpark
+  figures of a lightweight request costing ~150MB and a heavy request ~1GB, with a typical
+  workload assumed ~80% light / 20% heavy. CPU count alone isn't sufficient if memory is the
+  tighter constraint on a given host. `max_cron_threads` is a *separate* pool on top of `workers`
+  — increasing it doesn't reduce HTTP capacity, but it does add to total memory demand.
+- **Per-worker memory limits** (`limit_memory_soft` / `limit_memory_hard`): these cap how much
+  memory a single worker process may consume before Odoo recycles it — a worker over the soft
+  limit is recycled once it finishes its current request, while a worker over the hard limit is
+  killed immediately, mid-request. They exist to contain a single runaway request/worker, not to
+  cap the server's total memory — total memory is still roughly `workers × per-worker footprint`,
+  so raising worker count without checking available RAM against these limits (and against the
+  RAM-estimation approach above) is how a host gets OOM-killed under load rather than gracefully
+  degraded.
+- **`limit_time_cpu` / `limit_time_real`**: per-request CPU-time/wall-clock ceilings; a request
+  exceeding them is killed. `limit_time_real_cron` is the equivalent for cron jobs, typically set
+  higher since batch jobs legitimately run longer than interactive requests.
+- **LiveChat worker (websocket).** In multi-processing mode, Odoo automatically starts one
+  additional, dedicated worker — the LiveChat worker, gevent-based, listening on `--gevent-port`
+  — to handle real-time features (chat notifications, `bus.bus`) over websocket connections
+  (paths under `/websocket/`, routed to it by the reverse proxy). This is necessary because a
+  long-held websocket connection would otherwise tie up a regular prefork worker for the
+  connection's whole lifetime. It is one additional process, separate from and not counted in the
+  `workers` total. (Older Odoo versions called this the "longpolling" worker/port; the mechanism
+  is now websocket-based but serves the same purpose.)
+- **DB connection pool (`db_maxconn`)** caps how many Postgres connections *this Odoo instance*
+  will open — a general Odoo server-config parameter, not something the deploy guide's worker
+  page itself documents in depth. Each active worker holds at least one connection while handling
+  a request; if `db_maxconn` is smaller than concurrent active workers, requests queue for a
+  connection even though the workers themselves are idle-waiting, not CPU-bound — a symptom that
+  looks like "not enough workers" but is actually "not enough DB connections for the workers you
+  have." `db_maxconn` also has to fit within Postgres's own `max_connections`, shared across every
+  service on that DB host, not just this one Odoo instance.
+- **Cron/queue_job concurrency.** Scheduled actions share `max_cron_threads` among themselves —
+  a stuck or very long cron job can starve every other scheduled job on that instance, not just
+  delay itself. If a project uses the community `queue_job` module for async job processing, its
+  channel/concurrency config is a *separate* pool again, layered on top of both `workers` and
+  `max_cron_threads` — sizing one without the others is a common way to under- or over-provision.
+
+**Version notes:** Odoo 17 (current).

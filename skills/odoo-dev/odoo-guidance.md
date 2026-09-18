@@ -9,8 +9,8 @@ correct code, not an exhaustive restatement of Odoo's own documentation.
 
 A module is a directory containing `__manifest__.py` plus the standard subfolders:
 
-- `__manifest__.py` — name, version (`17.0.x.y.z`), `depends`, `data` (XML/CSV files loaded at
-  install/update, in listed order), `installable`, `application`.
+- `__manifest__.py` — name, version (by convention, often `17.0.x.y.z`), `depends`, `data`
+  (XML/CSV files loaded at install/update, in listed order), `installable`, `application`.
 - `models/` — Python model definitions (one file per model is the convention; `__init__.py`
   imports each).
 - `views/` — XML: form/list/kanban/search views, menu items, actions. Loaded via `data` in the
@@ -21,9 +21,9 @@ A module is a directory containing `__manifest__.py` plus the standard subfolder
   is introduced.
 - `data/` — demo/seed data (`noupdate="1"` for data that shouldn't be reset on module update).
 - `static/description/` — icon and README shown in the Apps list; `static/src/` — JS/CSS/QWeb
-  frontend assets, declared via an `assets` key in the manifest (Odoo 17; pre-16 used a
-  `web.assets_backend` XML template instead — not relevant to 17 but worth knowing if reading
-  older module code).
+  frontend assets, declared via an `assets` key in the manifest (Odoo 17; Odoo 14 and earlier
+  used a `web.assets_backend` XML template instead — not relevant to 17 but worth knowing if
+  reading older module code).
 - `report/` — QWeb report templates and their Python report actions.
 
 **Version notes:** Odoo 17 (current).
@@ -68,10 +68,9 @@ A module is a directory containing `__manifest__.py` plus the standard subfolder
 ## 3. Views & QWeb
 
 - **View types** most used in custom modules: `form`, list (XML tag is still `<tree>` in Odoo
-  17 — confirmed against the current `view_architectures.html` reference; Odoo 18 renamed the
-  root tag to `<list>`, so don't carry that over when reading newer docs/modules), `kanban`,
-  `search`. Each is XML registered via an `ir.ui.view` record, referenced by an
-  `ir.actions.act_window`, which is what a menu item opens.
+  17; Odoo 18 renamed the root tag to `<list>`, so don't carry that over when reading newer
+  docs/modules), `kanban`, `search`. Each is XML registered via an `ir.ui.view` record,
+  referenced by an `ir.actions.act_window`, which is what a menu item opens.
 - **View inheritance** (`inherit_id` + `<xpath expr="..." position="...">`) is the standard way
   to modify a view without copying it — `position="after"/"before"/"inside"/"replace"/"attributes"`.
   Prefer targeting a stable `name`/`field name=` attribute in the `expr`, not positional XPath
@@ -234,9 +233,9 @@ here — see `tpt-dev-scripts`'s `odoo-conf-summary.md` and its `CLAUDE.md` for 
 - **Worker models.** `workers = 0` (the default) runs Odoo **multi-threaded**: a new thread is
   spawned per incoming HTTP request, all inside one process — fine for local dev, wrong for
   production (one slow or stuck request can starve the whole process). `workers > 0` switches to
-  **multi-processing**: a pool of worker processes is created at startup, each handling one
-  request at a time, plus a separate cron worker pool (`max_cron_threads`, decoupled from the
-  HTTP worker pool).
+  **multi-processing (prefork)**: a pool of worker processes is created at startup, each
+  handling one request at a time, plus a separate cron worker pool (`max_cron_threads`,
+  decoupled from the HTTP worker pool).
 - **Sizing workers to CPU/RAM.** Odoo's own rule of thumb is workers ≈ `(#CPU cores × 2) + 1`,
   with roughly "1 worker ≈ 6 concurrent users" as the corresponding load estimate. That's a CPU-only
   starting point — Odoo's docs pair it with a RAM check: estimate needed RAM as
@@ -265,14 +264,15 @@ here — see `tpt-dev-scripts`'s `odoo-conf-summary.md` and its `CLAUDE.md` for 
   `workers` total. (Older Odoo versions called this the "longpolling" worker/port; the mechanism
   is now websocket-based but serves the same purpose.)
 - **DB connection pool (`db_maxconn`, default 64)** is a **per-process** pool: in multi-processing
-  mode, each worker process (and the cron worker pool, and the master process) gets its own
-  independent pool of up to `db_maxconn` connections — it is not one shared instance-wide pool
-  that all workers draw from and queue against. This is a general Odoo server-config parameter,
-  not one covered in depth by the deploy guide's worker-sizing page itself. The real
-  multi-process risk is the *aggregate* connection count against Postgres's own `max_connections`
-  (shared across every service on that DB host, not just this Odoo instance):
+  mode, each worker process (and the cron worker pool, and the LiveChat/gevent worker) gets its
+  own independent pool of up to `db_maxconn` connections — it is not one shared instance-wide pool
+  that all workers draw from and queue against. The real multi-process risk is the *aggregate*
+  connection count against Postgres's own `max_connections` (shared across every service on that
+  DB host, not just this Odoo instance):
   `(1 + workers + max_cron_threads) × db_maxconn` must stay under Postgres's `max_connections`,
-  or new connections start failing outright across the whole instance. (The "workers queue for a
+  or new connections start failing outright across the whole instance — the leading `1` here is
+  the LiveChat/gevent worker's pool, not the master process (the prefork master supervises the
+  worker pool but doesn't itself hold a `db_maxconn` pool). (The "workers queue for a
   connection" failure mode is a real risk too, but it applies to `workers = 0` multi-threaded
   mode, where `db_maxconn` *is* one shared pool for the single process — not to the multi-process
   model the rest of this section describes.)

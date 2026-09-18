@@ -679,7 +679,10 @@ Copy this for each new entry:
 - [ ] **Step 2: Verify**
 
 Run: `test -f skills/odoo-dev/findings.md && grep -c "^## " skills/odoo-dev/findings.md`
-Expected: file exists; exactly `1` (only the "## Template" heading — zero real entries).
+Expected: file exists; exactly `2` (the real "## Template" heading, plus the "## <short title>..."
+line inside the template's code-fenced example — that second line is part of an accurate
+copy-paste template showing the real required heading level, not a fabricated entry; zero real
+entries).
 
 - [ ] **Step 3: Commit**
 
@@ -730,7 +733,8 @@ what this repo's own `CLAUDE.md` and `tpt-odoo-ops` already call it.)
 - [ ] **Step 4: Check `findings.md` still has zero fabricated entries**
 
 Run: `grep -c "^## " skills/odoo-dev/findings.md`
-Expected: `1` (only the template heading) — confirms nothing got invented during the earlier
+Expected: `2` (the template heading, plus the "## <short title>..." line inside the template's
+code-fenced example — not a fabricated entry) — confirms nothing got invented during the earlier
 tasks.
 
 - [ ] **Step 5: Check `skills/README.md`'s index is accurate**

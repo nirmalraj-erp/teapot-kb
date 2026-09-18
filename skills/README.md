@@ -22,4 +22,5 @@ stays current — don't let copies drift the way `tpt-odoo-ops` did before this 
 (it was hand-duplicated, byte-identical, in both `tpt-dev-scripts` and `odoo-17/tpt-eu`).
 
 Current skills: `tpt-odoo-ops` (TPT Odoo production deploy/ops runbook), `odoo-dev` (Odoo 17
-development reference — framework, ORM performance, server resource utilization).
+development reference — framework, ORM performance, server resource utilization, and
+debugging/profiling).

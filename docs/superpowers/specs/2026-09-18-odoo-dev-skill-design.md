@@ -128,6 +128,18 @@ by hand — this is real content, not placeholder headers. The implementation pl
 each deep section (6, 7, 8) as requiring its own research pass given their priority and depth;
 sections 1–5 can be written more directly given they're intentionally lean.
 
+**Section 6 (ORM performance) exception:** the user has already supplied a tiered catalog of
+real, measured ORM anti-patterns found across TPT modules (POS, RMA, stock, sales), ordered by
+actual cost (tens-of-seconds-each down to small-but-everywhere), each with the pattern, why it's
+expensive, and the fix. This catalog is the primary content for section 6 — it's more valuable
+than generic doc research since it's concrete and measured. Official-doc research for section 6
+should supplement it (e.g. filling in ORM concepts the catalog assumes) rather than replace it.
+
+Where one of these patterns ties to a specific, dated, client-attributable incident (not just a
+general pattern seen "across modules"), a short entry also goes in `findings.md` cross-
+referencing the relevant part of section 6 — e.g. the constraint-writing pattern that made one
+duplicate-order flow spend 74% of its time in constraint methods.
+
 ## Testing / validation
 
 This is a documentation-only change — no code, no build/test tooling applies. Validation is

@@ -125,3 +125,101 @@ A module is a directory containing `__manifest__.py` plus the standard subfolder
   enforced — a model intended to be company-scoped needs both the field and a rule, not just one.
 
 **Version notes:** Odoo 17 (current).
+
+## 6. ORM performance
+
+Real, measured anti-patterns found across TPT modules (POS, RMA, stock, sales), ordered by what
+they actually cost. Tier 1 is the category worth grepping for first in any slow flow.
+
+### Tier 1 — tens of seconds each
+
+**O(n²) algorithms.** A lookup per record over a collection that also grows per record. Seen as
+a supplier-info lookup inside a loop creating stock moves, and a `write()` override that wrote
+the whole recordset once *per record* in it.
+→ If a loop contains a `search()` or a `write()` over something that scales with the same input,
+it's quadratic. Find those first.
+
+**`create()`/`write()` overrides that assume a single record.** The single biggest category
+found — a dozen modules across POS, RMA, stock, and sales each silently turned a batch operation
+into a loop.
+→ Use `@api.model_create_multi` for create, and inside an override iterate with
+`for record in self:` while batching the *queries* the loop issues — not one `write()` per
+record.
+
+**Rebuilding an aggregate from scratch on every change.** Changing one order line rebuilt every
+summary row of the whole order; deleting a document did the same for its aggregate.
+→ Refresh what changed, not everything that could have changed.
+
+**Missing indexes on foreign keys that are checked on delete.** Without an index, Postgres
+sequential-scans the referencing table once per deleted row.
+→ Any `Many2one` pointing at a document people actually delete needs `index=True`.
+
+**Writing distinct values one record at a time.** The ORM batches pending writes by identical
+value, so N genuinely different values means N round trips by construction — there's no batching
+to be had from the ORM alone here.
+→ When the values are distinct by nature, derive the whole set in one SQL statement instead of
+looping `record.write()`.
+
+### Tier 2 — seconds each
+
+**`@api.constrains` used to write instead of to check.** A constraint only fires when its listed
+field is part of the `create`/`write` call — a value set by a default, by `_write`, by an
+import, or by a migration silently never gets the derived value, and nothing in the data marks
+which rows those are. Declared on a stored compute's field, it additionally re-runs on every
+recomputation. TPT found 137 methods writing from a constraint, 128 of them inside a loop; one
+duplicate-order flow spent 74% of its time in constraint methods.
+→ A constraint checks and raises. A stored `compute` with `@api.depends` derives.
+
+**Assigning fields per record instead of per batch.** `record.field = value` on a stored record
+is a full `write()` — every override and constraint on that model runs behind it.
+→ Collect the values, group by identical value, issue one `write()` per group.
+
+**`search()` per record.** The classic N+1 — one list view ran two searches per row.
+→ One `search()` with `('field', 'in', self.ids)`, then distribute the result through a dict
+keyed by that field.
+
+**Writing values that didn't change.** Ranking flags, preference flags, aggregate rebuilds — all
+rewrote identical values, and every write drags its constraints and computes behind it regardless
+of whether the value actually moved.
+→ Diff first, write only what moved.
+
+**Writing on read paths.** Computes that write while you read, found across every read-only
+screen that used them.
+→ Assign inside a compute, never `write()`. Use `read()` for read paths instead of calling a
+`_compute_*` method directly (see Tier 3 on why calling it directly is also a correctness bug).
+
+### Tier 3 — small individually, but everywhere in the code
+
+**`exists()` inside a loop.** `exists()` is never prefetched and always issues its own query. One
+confirmation flow spent 456 statements re-establishing that records it had just loaded still
+existed.
+→ `for line in self.exists():` once, outside the loop — not `if line.exists():` inside it.
+
+**Prefetch killers per record.** `sudo()`, `with_context()`, and `browse(single_id)` each
+produce a prefetch set of exactly one record, so the *next* field read on it fetches a single row
+with all its columns instead of batching with its siblings.
+→ One `sudo()` (or `with_context()`) call on the whole recordset up front, not one per record
+inside a loop.
+
+**`env.ref()` inside a loop.** It ends in an `exists()` call, so it's one query per call even
+though the XML-ID lookup itself is cached.
+→ `_xmlid_to_res_model_res_id()` plus `browse()`, resolved once outside the loop.
+
+**Calling compute methods directly.** Calling a `_compute_*` method yourself means the field
+isn't protected the way the framework protects it during a real recompute, so every assignment
+inside it becomes a real `write()` of the record — with the dependency searches and property
+reads that come with a write, not just the field set.
+→ `invalidate_recordset([...])` + `modified([...])`, and let the framework re-run the compute
+normally.
+
+**Loading full records when only ids are needed.** `browse()` plus a field read fetches every
+column the recordset's fields prefetch, even when only the id or one relation column is used.
+→ For pure id relationships, read the columns directly (e.g. via `read()` limited to the needed
+field, or `_read_group`) instead of browsing full records.
+
+**Copying data that shouldn't follow a duplicate.** Audit trails and change histories copied
+along with the document they logged, on every `copy()` — cost during the duplicate, and wrong
+data afterwards (a fresh document inheriting another document's history).
+→ `copy=False` on any field that records what happened to the *original*, not the copy.
+
+**Version notes:** Odoo 17 (current).
